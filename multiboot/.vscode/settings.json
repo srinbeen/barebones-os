@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "stdarg.h": "c",
+        "stddef.h": "c",
+        "stdbool.h": "c",
+        "stdint-gcc.h": "c",
+        "dumbio.h": "c",
+        "dumbstring.h": "c",
+        "keyboard.h": "c"
+    }
+}
