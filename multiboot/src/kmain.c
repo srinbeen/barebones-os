@@ -5,6 +5,8 @@
 #include <dumbio.h>
 #include <keyboard.h>
 
+// #include <idt.h>
+
 void kmain() {
   VGA_clear();
   printk("%c\n", 'a'); // should be "a"
@@ -29,14 +31,17 @@ void kmain() {
   printk("%qd\n", (long long)LONG_MAX); // "9223372036854775807"
   printk("%qu\n", (long long)ULONG_MAX); // "18446744073709551615"
 
-  PS2_setup();
+  // PS2_setup();
 
-  printk("\n");
+  // printk("\n");
 
-  while(1) {
-    PS2_process_keyboard();
-    // printk("%hx", PS2_read_data());
-  }
+  // while(1) {
+  //   PS2_process_keyboard();
+  //   // printk("%hx", PS2_read_data());
+  // }
+
+  // setup_idt();
+  // __asm__ volatile ("int $0");
 
   while(1);
 }
