@@ -9,7 +9,7 @@ extern irq_handler
 %define AC 17    ; Alignment Check
 
 %macro DEFINE_IRQ 2
-irq%1:
+irq%+%1:
     mov rsi, %1
     mov rdi, 34
     jmp %2   
@@ -21,7 +21,7 @@ bits 64
 irq_stubs:
 %assign i 0
 %rep 256
-%if (i = DP) || (i = TS) || (i = NP) || (i = SS) || (i = GP) || (i = PF) || (i = AC)
+%if (i = DF) || (i = TS) || (i = NP) || (i = SS) || (i = GP) || (i = PF) || (i = AC)
     DEFINE_IRQ i, irq_error_code
 %else
     DEFINE_IRQ i, irq_common_stub
@@ -46,6 +46,6 @@ global irq_stub_array
 irq_stub_array:
 %assign i 0
 %rep 256
-    dq irq%i
+    dq irq%+i
 %assign i i+1
 %endrep
