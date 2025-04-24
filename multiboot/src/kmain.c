@@ -40,8 +40,8 @@ void kmain() {
   //   // printk("%hx", PS2_read_data());
   // }
 
-  // setup_idt();
-  // __asm__ volatile ("int $0");
+  setup_idt();
+  __asm__ volatile ("int $0");
 
   while(1);
 }

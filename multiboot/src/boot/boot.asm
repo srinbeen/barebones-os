@@ -1,4 +1,5 @@
 extern long_mode_start
+global kernel_code_selector
 global start
 
 section .text
@@ -190,3 +191,5 @@ gdt64:
 .eogdt64:
     dw $ - gdt64 - 1    ; 4 byte (length - 1) 
     dq gdt64            ; 8-byte GDT start address
+kernel_code_selector:
+    dw gdt64_code_offset
