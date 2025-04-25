@@ -1,20 +1,31 @@
 #include <idt.h>
-#include <vga.h>
+#include <dumbio.h>
+#include <keyboard.h>
 
 static idt_entry_t idt[IDT_NUM_ENTRIES];
 static idt_ptr_t idt_ptr;
 
 void irq_handler(int n, int e, void* a) {
+    // printk("triggered IRQ: %d\n", n);
     switch (n) {
         case EXC_DE:
-            VGA_display_str("please for the love of god work\n");
+            printk("divide by zero\n");
+            break;
+        case EXC_TS:
+            printk("invalid tss\n");
+            break;
+        case IRQ_KEYBOARD:
+            PS2_process_keyboard();
+            PIC_sendEOI(PIC_KEYBOARD_IRQ_NUM);
+            break;
+        case 100:
+            printk("testing IRQ100\n");
             break;
         default:
-            VGA_display_str("ts is NOT tuff\n");
+            printk("ts is NOT tuff\n");
+            __asm__ volatile ("hlt");
             break;
     }
-
-    __asm__ volatile ("hlt");
 }
 
 void setup_idt() {

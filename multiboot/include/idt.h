@@ -2,20 +2,23 @@
 #define IDT_H
 
 #include <stdint-gcc.h>
+#include <pic.h>
 
 #define IDT_NUM_ENTRIES     256
 #define IDT_TRAP_GATE       0xF
 #define IDT_INTR_GATE       0xE
 #define IDT_NUM_EXCEPTIONS  0x20
 
-#define EXC_DE        0
-#define EXC_DF        8
-#define EXC_TS        10
-#define EXC_NP        11
-#define EXC_SS        12
-#define EXC_GP        13
-#define EXC_PF        14
-#define EXC_AC        17
+#define EXC_DE          0
+#define EXC_DF          8
+#define EXC_TS          10
+#define EXC_NP          11
+#define EXC_SS          12
+#define EXC_GP          13
+#define EXC_PF          14
+#define EXC_AC          17
+
+#define IRQ_KEYBOARD    (M_PIC_OFFSET + PIC_KEYBOARD_IRQ_NUM)
 
 typedef struct {
     uint16_t offset0;

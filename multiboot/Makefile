@@ -18,74 +18,17 @@ LDFLAGS:=-n
 
 SUBDIRS:=boot driver lib interrupt
 SRC_SUBDIRS:=$(foreach path,$(SUBDIRS),$(SRC_DIR)/$(path))
-# BUILD_SUBDIRS:=$(foreach path,$(SUBDIRS),$(BUILD_DIR)/$(path))
 
 SRC_FILES:=$(foreach subdir,$(SRC_SUBDIRS),$(wildcard $(subdir)/*.c) $(wildcard $(subdir)/*.asm))
 BUILD_FILES:=$(patsubst $(SRC_DIR)%,$(BUILD_DIR)%,$(SRC_FILES))
 BUILD_FILES:=$(foreach f,$(BUILD_FILES),$(basename $(f)).o)
 
-# SRC_FILES_ASM:=$(foreach subdir,$(SRC_SUBDIRS),$(wildcard $(subdir)/*.asm))
-# SRC_FILES_C:=$(foreach subdir,$(SRC_SUBDIRS),$(wildcard $(subdir)/*.c))
-
-# BUILD_FILES_ASM:=$(patsubst $(SRC_DIR)%,$(BUILD_DIR)%,$(SRC_FILES_ASM))
-# BUILD_FILES_ASM:=$(foreach f,$(BUILD_FILES_ASM),$(basename $(f)).o)
-
-# BUILD_FILES_C:=$(patsubst $(SRC_DIR)%,$(BUILD_DIR)%,$(SRC_FILES_C))
-# BUILD_FILES_C:=$(foreach f,$(BUILD_FILES_C),$(basename $(f)).o)
-
-# $(info $(BUILD_FILES_C))
-
-# define build_objs
-# $(foreach i, $(shell seq 1 $(words $(BUILD_FILES))), \
-# 	$(eval $(word $(i),$(BUILD_FILES)) : $(word $(i),$(SRC_FILES)); \
-# 		@echo $$@ --> $$<))
-# endef
-
-# define build_objs
-# $(foreach i, $(shell seq 1 $(words $(BUILD_FILES))), \
-# 	$(word $(i),$(BUILD_FILES)) : $(word $(i),$(SRC_FILES)))
-# endef
-
-# define build_objs
-# $(foreach i, $(shell seq 1 $(words $(BUILD_FILES))), \
-# 	$(eval $(word $(i),$(BUILD_FILES)): $(word $(i),$(SRC_FILES));) \
-# 	$(eval $(word $(i),$(BUILD_FILES)) : ; \
-# 		@mkdir -p $(dir $$@) ; \
-# 		$(if $(filter %.c, $$<), \
-# 			@echo building $$@ with $$< as a C file, \
-# 			@echo building $$@ with $$< as an ASM file)))
-# endef
-
-# $(CC) $(CCFLAGS) -c -o $$@ $$<, \
-# $(AS) $(ASFLAGS) -o $$@ $$<)))
-
-# BOOT_SUBDIR=boot
-# BUILD_BOOT_SUBDIR=$(BUILD_DIR)/$(BOOT_SUBDIR)
-# SRC_BOOT_SUBDIR=$(SRC_DIR)/$(BOOT_SUBDIR)
-
-# SRCS_BOOT=$(wildcard $(SRC_BOOT_SUBDIR)/*.asm)
-# OBJS_BOOT=$(foreach file,$(SRCS_BOOT),$(BUILD_BOOT_SUBDIR)/$(notdir $(basename $(file))).o)
-
-# LIB_SUBDIR=lib
-# BUILD_LIB_SUBDIR=$(BUILD_DIR)/$(LIB_SUBDIR)
-# SRC_LIB_SUBDIR=$(SRC_DIR)/$(LIB_SUBDIR)
-
-# SRCS_LIB=$(wildcard $(SRC_LIB_SUBDIR)/*.c)
-# OBJS_LIB=$(foreach file,$(SRCS_LIB),$(BUILD_LIB_SUBDIR)/$(notdir $(basename $(file))).o)
-
-# DRIVERS_SUBDIR=drivers
-# BUILD_DRIVERS_SUBDIR=$(BUILD_DIR)/$(DRIVERS_SUBDIR)
-# SRC_DRIVERS_SUBDIR=$(SRC_DIR)/$(DRIVERS_SUBDIR)
-
-# SRCS_DRIVERS=$(wildcard $(SRC_DRIVERS_SUBDIR)/*.c)
-# OBJS_DRIVERS=$(foreach file,$(SRCS_DRIVERS),$(BUILD_DRIVERS_SUBDIR)/$(notdir $(basename $(file))).o)
-
-# OBJS=$(OBJS_BOOT) $(OBJS_LIB) $(OBJS_DRIVERS)
-
 KERNEL_NAME:=kmain
 KERNEL_SRC:=$(SRC_DIR)/$(KERNEL_NAME).c
 KERNEL_OBJ:=$(BUILD_DIR)/$(KERNEL_NAME).o
 KERNEL:=$(BUILD_DIR)/kernel.bin
+
+CFG_FILE:=$(SRC_DIR)/grub.cfg
 
 LO_SH:=./find_loop_dev
 DEV_LOOP=$(shell $(LO_SH))
@@ -93,12 +36,24 @@ DEV_LOOP_1=$(shell expr $(DEV_LOOP) + 1)
 
 OSFILES:=/mnt/osfiles
 
-all: $(BUILD_DIR) $(BUILD_FILES)
-	@echo done
-# qemu-system-x86_64 -s -drive format=raw,file=$<
+all: $(IMG_FILE)
+	@echo done.. booting qemu
+	qemu-system-x86_64 -drive format=raw,file=$<
 
-$(BUILD_DIR):
-	@mkdir -p $@
+debug: $(IMG_FILE)
+	@echo done.. booting qemu
+	qemu-system-x86_64 -s -S -drive format=raw,file=$<
+
+kernel: $(KERNEL)
+
+# Link obj files and get kernel
+$(KERNEL): $(BUILD_FILES) $(KERNEL_OBJ) $(LINKERFILE)
+	$(LD) $(LDFLAGS) -o $@ -T $(LINKERFILE) $(BUILD_FILES) $(KERNEL_OBJ)
+
+$(KERNEL_OBJ) : $(KERNEL_SRC)
+	$(CC) $(CCFLAGS) -c -o $@ $<
+
+build: $(BUILD_FILES)
 
 define build_objs
 $(eval $(1) : $(2) ; \
@@ -113,35 +68,8 @@ $(foreach i,$(shell seq 1 $(words $(BUILD_FILES))), \
 		$(word $(i),$(BUILD_FILES)),\
 		$(word $(i),$(SRC_FILES))))
 
-kernel: $(KERNEL)
-
-# $(BUILD_BOOT_SUBDIR)/%.o : $(SRC_BOOT_SUBDIR)/%.asm $(BUILD_BOOT_SUBDIR)
-# 	$(AS) $(ASFLAGS) -o $@ $<
-
-# $(BUILD_LIB_SUBDIR)/%.o : $(SRC_LIB_SUBDIR)/%.c $(BUILD_LIB_SUBDIR)
-# 	$(CC) $(CCFLAGS) -c -o $@ $<
-
-# $(BUILD_DRIVERS_SUBDIR)/%.o : $(SRC_DRIVERS_SUBDIR)/%.c $(BUILD_DRIVERS_SUBDIR)
-# 	$(CC) $(CCFLAGS) -c -o $@ $<
-
-$(KERNEL_OBJ) : $(KERNEL_SRC) $(BUILD_DIR)
-	$(CC) $(CCFLAGS) -c -o $@ $<
-
-# $(BUILD_DIR): 
-# 	mkdir -p $@
-# $(BUILD_BOOT_SUBDIR): 
-# 	mkdir -p $@
-# $(BUILD_LIB_SUBDIR): 
-# 	mkdir -p $@
-# $(BUILD_DRIVERS_SUBDIR): 
-# 	mkdir -p $@
-
-# Link obj files and get kernel
-$(KERNEL): $(BUILD_DIR) $(OBJS) $(KERNEL_OBJ) $(LINKERFILE)
-	$(LD) $(LDFLAGS) -o $@ -T $(LINKERFILE) $(OBJS) $(KERNEL_OBJ)
-
 # Make img directory to copy to OSFILES
-$(IMG_DIR): $(KERNEL) $(SRC_DIR)/grub.cfg
+$(IMG_DIR): $(KERNEL) $(CFG_FILE)
 	mkdir -p $@
 	mkdir -p $@/boot
 	mkdir -p $@/boot/grub

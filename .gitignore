@@ -1,2 +1,4 @@
 cross-compiler/
 .vscode/
+multiboot/build/
+multiboot/img/

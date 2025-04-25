@@ -5,10 +5,40 @@
 #include <dumbio.h>
 #include <keyboard.h>
 
-// #include <idt.h>
+#include <idt.h>
+#include <pic.h>
+
+void test_printk();
+void test_keyboard_polling();
 
 void kmain() {
   VGA_clear();
+
+  __asm__ volatile ("cli");
+  PS2_setup();
+  PIC_remap(M_PIC_OFFSET, S_PIC_OFFSET);
+  setup_idt();
+
+  VGA_clear();
+  printk("set up everything!!\n");
+  __asm__ volatile ("sti");
+
+  // __asm__ volatile ("int %0" : : "i" (100));
+  // __asm__ volatile ("int %0" : : "i" (EXC_TS));
+
+
+  while(1);
+}
+
+void test_keyboard_polling() {
+  PS2_setup();
+  printk("\n");
+  while(1) {
+    PS2_process_keyboard();
+  }
+}
+
+void test_printk() {
   printk("%c\n", 'a'); // should be "a"
   printk("%c\n", 'Q'); // should be "Q"
   printk("%c\n", 256 + '9'); // Should be "9"
@@ -30,18 +60,4 @@ void kmain() {
   printk("%qd\n", (long long)LONG_MIN); // "-9223372036854775808"
   printk("%qd\n", (long long)LONG_MAX); // "9223372036854775807"
   printk("%qu\n", (long long)ULONG_MAX); // "18446744073709551615"
-
-  // PS2_setup();
-
-  // printk("\n");
-
-  // while(1) {
-  //   PS2_process_keyboard();
-  //   // printk("%hx", PS2_read_data());
-  // }
-
-  setup_idt();
-  __asm__ volatile ("int $0");
-
-  while(1);
 }

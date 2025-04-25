@@ -180,6 +180,17 @@ void PS2_setup() {
     PS2_write_cmd(PS2_CMD_ENABLE_1);
     printk("port 1 enabled\n");
 
+    PS2_write_cmd(PS2_CMD_CCB_READ);
+    ccb = PS2_read_data();
+    ccb |= (uint8_t)(
+        // port 1 enable interrupt
+        (1 << 0)
+    );
+
+    PS2_write_cmd(PS2_CMD_CCB_WRITE);
+    PS2_write_data(ccb);
+
+
     PS2_write_cmd(PS2_CMD_RESET);
 
     cur_scancode_map = scancode_map_unshifted;
