@@ -1,5 +1,5 @@
-#ifndef IDT_H
-#define IDT_H
+#ifndef INT_H
+#define INT_H
 
 #include <stdint-gcc.h>
 #include <pic.h>
@@ -17,6 +17,13 @@
 #define EXC_GP          13
 #define EXC_PF          14
 #define EXC_AC          17
+
+#define IST_CUR         0
+#define IST_DF          1
+#define IST_PF          2
+#define IST_GP          3
+
+#define STACK_SIZE      4096
 
 #define IRQ_KEYBOARD    (M_PIC_OFFSET + PIC_KEYBOARD_IRQ_NUM)
 
@@ -36,19 +43,54 @@ typedef struct {
     uint32_t res2;
 } __attribute__((packed)) idt_entry_t;
 
+
 typedef struct {
     uint16_t limit;
     uint64_t base;
-} __attribute__((packed)) idt_ptr_t;
+} __attribute__((packed)) descriptor_ptr_t;
+
+typedef struct {
+    uint32_t res0;
+    uint64_t rsp0;
+    uint64_t rsp1;
+    uint64_t rsp2;
+    uint64_t res1;
+    uint64_t ist1;
+    uint64_t ist2;
+    uint64_t ist3;
+    uint64_t ist4;
+    uint64_t ist5;
+    uint64_t ist6;
+    uint64_t ist7;
+    uint64_t res2;
+    uint16_t res3;
+    uint16_t iobp;
+} __attribute__((packed)) tss_t;
 
 // irq num, err code, args
-typedef void (*irq_handler_t)(int, int, void*);
+typedef void (*irq_handler_t)(void*);
+typedef struct {
+    void *args;
+    irq_handler_t handler;
+} irq_table_entry_t;
 
 // irq_stubs.asm
 extern void (*irq_stub_array[IDT_NUM_ENTRIES])(void);
+
 extern uint16_t kernel_code_selector;
+extern uint16_t tss_selector;
 
-void irq_handler(int n, int e, void* a);
+extern tss_t tss;
+extern intptr_t critical_stacks[4];
+
+void irq_handler(int n, int e);
 void setup_idt();
+void register_irq(int n, void* args, irq_handler_t irq_handler);
+void TSS_setup();
+void IRQ_setup();
 
-#endif // IDT_H
+void set_interrupts();
+void clear_interrupts();
+void halt_cpu();
+
+#endif // INT_H

@@ -34,6 +34,10 @@ void PS2_write_data(uint8_t data);
 uint8_t PS2_read_data();
 void PS2_process_keyboard();
 
+typedef struct {
+    const char* cur_scancode_map;
+} keyboard_state_t;
+
 extern const char scancode_map_unshifted[];
 extern const char scancode_map_shifted[];
 

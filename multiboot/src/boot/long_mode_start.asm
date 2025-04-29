@@ -1,4 +1,6 @@
+extern tss
 extern kmain
+
 global long_mode_start
 
 section .text

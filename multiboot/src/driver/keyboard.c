@@ -2,6 +2,10 @@
 #include <stdint-gcc.h>
 #include <dumbio.h>
 
+#include <interrupts.h>
+#include <pic.h>
+
+
 const char scancode_map_unshifted[256] = {
     [0x1C] = 'a',
     [0x32] = 'b',
@@ -109,7 +113,7 @@ const char scancode_map_shifted[256] = {
     [0x4A] = '?'
 };
 
-const char* cur_scancode_map;
+static keyboard_state_t state;
 
 inline uint8_t PS2_read_data() {
     while((inb(PS2_STATUS_REG) & 0x01) == 0x00);
@@ -193,7 +197,9 @@ void PS2_setup() {
 
     PS2_write_cmd(PS2_CMD_RESET);
 
-    cur_scancode_map = scancode_map_unshifted;
+    state.cur_scancode_map = scancode_map_unshifted;
+    PIC_enable_line(PIC_KEYBOARD_IRQ_NUM);
+    register_irq(IRQ_KEYBOARD, (void*)&state, PS2_process_keyboard);
 }
 
 uint8_t PS2_isShift_scancode(uint8_t scancode) {
@@ -208,20 +214,25 @@ uint8_t PS2_isShift_scancode(uint8_t scancode) {
     }
 }
 
-void PS2_process_keyboard() {
+// change STATE for releases and such
+void PS2_process_keyboard(void* args) {
+    keyboard_state_t* state = (keyboard_state_t*)args;
+
     uint8_t scancode = PS2_read_data();
 
     if (scancode == SCAN_CODE_RELEASE) {
         uint8_t scancode_released = PS2_read_data();
         
         if (PS2_isShift_scancode(scancode_released)) {
-            cur_scancode_map = scancode_map_unshifted;
+            state->cur_scancode_map = scancode_map_unshifted;
         }
     }
     else if (PS2_isShift_scancode(scancode)) {
-        cur_scancode_map = scancode_map_shifted;
+        state->cur_scancode_map = scancode_map_shifted;
     }
     else {
-        printk("%c", cur_scancode_map[scancode]);
+        printk("%c", state->cur_scancode_map[scancode]);
     }
+
+    PIC_sendEOI(PIC_KEYBOARD_IRQ_NUM);
 }

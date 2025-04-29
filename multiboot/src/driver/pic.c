@@ -23,9 +23,7 @@ void PIC_remap(int offset1, int offset2) {
 	outb(S_PIC_DATA, ICW4_8086);
 	io_wait();
 
-	// Unmask JUST keyboard PIC
-	outb(M_PIC_DATA, ~PIC_KEYBOARD_IRQ_MASK);
-	outb(S_PIC_DATA, 0xFF);
+	PIC_disable();
 }
 void PIC_sendEOI(uint8_t irq) {
 	if(irq >= 8) {
@@ -33,4 +31,37 @@ void PIC_sendEOI(uint8_t irq) {
     }
 	
 	outb(M_PIC_CMD, PIC_CMD_EOI);
+}
+
+void PIC_disable() {
+	outb(M_PIC_DATA, 0xFF);
+	outb(S_PIC_DATA, 0xFF);
+}
+
+void PIC_disable_line(uint8_t irq) {
+    uint16_t port;
+    uint8_t value;
+
+    if(irq < 8) {
+        port = M_PIC_DATA;
+    } else {
+        port = S_PIC_DATA;
+        irq -= 8;
+    }
+    value = inb(port) | (1 << irq);
+    outb(port, value);        
+}
+
+void PIC_enable_line(uint8_t irq) {
+    uint16_t port;
+    uint8_t value;
+
+    if(irq < 8) {
+        port = M_PIC_DATA;
+    } else {
+        port = S_PIC_DATA;
+        irq -= 8;
+    }
+    value = inb(port) & ~(1 << irq);
+    outb(port, value);        
 }

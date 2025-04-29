@@ -5,28 +5,20 @@
 #include <dumbio.h>
 #include <keyboard.h>
 
-#include <idt.h>
+#include <interrupts.h>
 #include <pic.h>
+
+#define INT_N(n) __asm__ volatile ("int %0" : : "i" (n))
 
 void test_printk();
 void test_keyboard_polling();
 
 void kmain() {
   VGA_clear();
-
-  __asm__ volatile ("cli");
-  PS2_setup();
-  PIC_remap(M_PIC_OFFSET, S_PIC_OFFSET);
-  setup_idt();
-
+  
+  IRQ_setup();
   VGA_clear();
-  printk("set up everything!!\n");
-  __asm__ volatile ("sti");
-
-  // __asm__ volatile ("int %0" : : "i" (100));
-  // __asm__ volatile ("int %0" : : "i" (EXC_TS));
-
-
+  
   while(1);
 }
 

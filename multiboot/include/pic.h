@@ -21,14 +21,17 @@
 #define ICW4_SFNM	            0x10		/* Special fully nested (not) */
 
 #define PIC_CMD_EOI             0x20
-#define PIC_KEYBOARD_IRQ_NUM    1
-#define PIC_KEYBOARD_IRQ_MASK   (1 << PIC_KEYBOARD_IRQ_NUM)
 
 #define M_PIC_OFFSET            0x20 
 #define S_PIC_OFFSET            (M_PIC_OFFSET + 8) 
 
+#define PIC_KEYBOARD_IRQ_NUM    1
+
 void PIC_remap(int offset1, int offset2);
 void io_wait();
 void PIC_sendEOI(uint8_t irq);
+void PIC_disable_line(uint8_t irq);
+void PIC_enable_line(uint8_t irq);
+void PIC_disable();
 
 #endif // PIC_H

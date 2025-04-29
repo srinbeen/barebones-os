@@ -1,6 +1,16 @@
 extern long_mode_start
+
+global gdt64
+global tss
+
 global kernel_code_selector
+global tss_selector
+
+global critical_stacks
+
 global start
+
+%define STACK_SIZE  4096
 
 section .text
 bits 32
@@ -16,6 +26,7 @@ start:
     ; set up paging
     call set_up_page_tables
     call enable_paging
+
 
     ; load the 64-bit GDT
     lgdt [gdt64.eogdt64]
@@ -153,7 +164,6 @@ enable_paging:
     ret
 
 
-
 section .bss
 
 ; initial pages of size 2MiB
@@ -171,25 +181,61 @@ p2_table:
     resb 4096
 
 
+; STACKS
 stack_bottom:
-    resb 64
+    resb STACK_SIZE
 stack_top:
 
+; stacks for critical ISRs
+df_stack_bottom:
+    resb STACK_SIZE
+df_stack_top:
 
-section .rodata
+pf_stack_bottom:
+    resb STACK_SIZE
+pf_stack_top:
 
+gp_stack_bottom:
+    resb STACK_SIZE
+gp_stack_top:
+
+tss:
+    resb 0x68
+
+
+section .data
 gdt64:
     dq 0 ; zero entry
 
 .code:
-    gdt64_code_offset     equ     $ - gdt64 
+    gdt64_code_offset   equ     $ - gdt64 
     ; 43: executable, 44: 1 for code segment, 47: present, 53: 64-bit segment
     dq (1<<43) | (1<<44) | (1<<47) | (1<<53)
+; .data:
+;     gdt64_data_offset   equ     $ - gdt64
+;     ; 41: write access, 44: 1 for data segment, 47: present, 53: 64-bit segment
+;     dq (1<<41) | (1<<44) | (1<<47) | (1<<53)
+.tss:
+    gdt64_tss_offset    equ     $ - gdt64
+    dq 0
+    dq 0
 
 ; End-of-GDT64
 ; GDT pointer data structure
 .eogdt64:
     dw $ - gdt64 - 1    ; 4 byte (length - 1) 
     dq gdt64            ; 8-byte GDT start address
+
+
+section .rodata
+
 kernel_code_selector:
     dw gdt64_code_offset
+tss_selector:
+    dw gdt64_tss_offset
+
+critical_stacks:
+    dq stack_top
+    dq df_stack_top
+    dq pf_stack_top
+    dq gp_stack_top
