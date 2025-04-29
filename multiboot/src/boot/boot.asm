@@ -211,10 +211,6 @@ gdt64:
     gdt64_code_offset   equ     $ - gdt64 
     ; 43: executable, 44: 1 for code segment, 47: present, 53: 64-bit segment
     dq (1<<43) | (1<<44) | (1<<47) | (1<<53)
-; .data:
-;     gdt64_data_offset   equ     $ - gdt64
-;     ; 41: write access, 44: 1 for data segment, 47: present, 53: 64-bit segment
-;     dq (1<<41) | (1<<44) | (1<<47) | (1<<53)
 .tss:
     gdt64_tss_offset    equ     $ - gdt64
     dq 0

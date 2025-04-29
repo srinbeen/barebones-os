@@ -2,6 +2,7 @@
 #define PS2_H
 
 #include <stdint-gcc.h>
+#include <stdbool.h>
 
 #define PS2_DATA_PORT           0x60
 #define PS2_STATUS_REG          0x64
@@ -36,6 +37,7 @@ void PS2_process_keyboard();
 
 typedef struct {
     const char* cur_scancode_map;
+    bool justReleased;
 } keyboard_state_t;
 
 extern const char scancode_map_unshifted[];

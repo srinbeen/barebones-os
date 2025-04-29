@@ -2,6 +2,8 @@
 #include <dumbstring.h>
 #include <stdint-gcc.h>
 
+#include <interrupts.h>
+
 static uint16_t curCursorIdx = 0;
 static uint16_t* VGA_ptr = (uint16_t*)VGA_BASE_ADDR;
 

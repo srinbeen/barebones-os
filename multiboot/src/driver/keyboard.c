@@ -198,34 +198,30 @@ void PS2_setup() {
     PS2_write_cmd(PS2_CMD_RESET);
 
     state.cur_scancode_map = scancode_map_unshifted;
+    state.justReleased = false;
+
     PIC_enable_line(PIC_KEYBOARD_IRQ_NUM);
     register_irq(IRQ_KEYBOARD, (void*)&state, PS2_process_keyboard);
 }
 
-uint8_t PS2_isShift_scancode(uint8_t scancode) {
-    if (scancode == SCAN_CODE_LSHIFT) {
-        return 1;
-    }
-    else if (scancode == SCAN_CODE_RSHIFT) {
-        return 2;
-    }
-    else {
-        return 0;
-    }
+bool PS2_isShift_scancode(uint8_t scancode) {
+    return (scancode == SCAN_CODE_LSHIFT || scancode == SCAN_CODE_RSHIFT);
 }
 
-// change STATE for releases and such
+
 void PS2_process_keyboard(void* args) {
     keyboard_state_t* state = (keyboard_state_t*)args;
 
     uint8_t scancode = PS2_read_data();
 
     if (scancode == SCAN_CODE_RELEASE) {
-        uint8_t scancode_released = PS2_read_data();
-        
-        if (PS2_isShift_scancode(scancode_released)) {
+        state->justReleased = true;
+    }
+    else if (state->justReleased) {
+        if (PS2_isShift_scancode(scancode)) {
             state->cur_scancode_map = scancode_map_unshifted;
         }
+        state->justReleased = false;
     }
     else if (PS2_isShift_scancode(scancode)) {
         state->cur_scancode_map = scancode_map_shifted;
