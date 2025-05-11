@@ -26,6 +26,12 @@
 #define STACK_SIZE      4096
 
 #define IRQ_KEYBOARD    (M_PIC_OFFSET + PIC_KEYBOARD_IRQ_NUM)
+#define IRQ_SERIAL      (M_PIC_OFFSET + PIC_SERIAL_IRQ_NUM)
+
+#define INT_N(n)        __asm__ volatile ("int %0" : : "i" (n))
+#define STI()           __asm__ volatile ("sti")
+#define CLI()           __asm__ volatile ("cli")
+#define HLT()           __asm__ volatile ("hlt")
 
 typedef struct {
     uint16_t offset0;
@@ -88,9 +94,5 @@ void setup_idt();
 void register_irq(int n, void* args, irq_handler_t irq_handler);
 void TSS_setup();
 void IRQ_setup();
-
-void set_interrupts();
-void clear_interrupts();
-void halt_cpu();
 
 #endif // INT_H

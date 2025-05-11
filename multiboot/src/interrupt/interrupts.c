@@ -1,6 +1,8 @@
-#include <interrupts.h>
 #include <dumbio.h>
+
+#include <interrupts.h>
 #include <keyboard.h>
+#include <serial.h>
 
 #include <gdt.h>
 #include <stddef.h>
@@ -8,25 +10,14 @@
 static idt_entry_t idt[IDT_NUM_ENTRIES] = {0};
 static irq_table_entry_t irq_table[IDT_NUM_ENTRIES] = {0};
 
-void inline set_interrupts() {
-    __asm__ volatile ("sti");
-}
-void inline clear_interrupts() {
-    __asm__ volatile ("cli");
-}
-void inline halt_cpu() {
-    __asm__ volatile ("hlt");
-}
-
-
 void irq_handler(int n, int e) {
     if (n < 0 && n >= IDT_NUM_ENTRIES) {
         printk("irq number out of bounds: %d\n", n);
-        halt_cpu();
+        HLT();
     }
     else if (irq_table[n].handler == NULL) {
         printk("unhandled interrupt: %d\n", n);
-        halt_cpu();
+        HLT();
     }
     
     irq_table[n].handler(irq_table[n].args);
@@ -73,12 +64,13 @@ void register_irq(int n, void* args, irq_handler_t irq_handler) {
 }
 
 void IRQ_setup() {
-    clear_interrupts();
+    CLI();
     TSS_setup();
     PIC_remap(M_PIC_OFFSET, S_PIC_OFFSET);
     PS2_setup();
+    SER_init();
     setup_idt();
-    set_interrupts();
+    STI();
 }
 
 void TSS_setup() {

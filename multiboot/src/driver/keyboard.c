@@ -200,8 +200,9 @@ void PS2_setup() {
     state.cur_scancode_map = scancode_map_unshifted;
     state.justReleased = false;
 
-    PIC_enable_line(PIC_KEYBOARD_IRQ_NUM);
     register_irq(IRQ_KEYBOARD, (void*)&state, PS2_process_keyboard);
+    
+    PIC_enable_line(PIC_KEYBOARD_IRQ_NUM);
 }
 
 bool PS2_isShift_scancode(uint8_t scancode) {

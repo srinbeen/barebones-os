@@ -26,6 +26,7 @@
 #define S_PIC_OFFSET            (M_PIC_OFFSET + 8) 
 
 #define PIC_KEYBOARD_IRQ_NUM    1
+#define PIC_SERIAL_IRQ_NUM      4
 
 void PIC_remap(int offset1, int offset2);
 void io_wait();

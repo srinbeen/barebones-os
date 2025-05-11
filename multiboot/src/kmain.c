@@ -8,8 +8,6 @@
 #include <interrupts.h>
 #include <pic.h>
 
-#define INT_N(n) __asm__ volatile ("int %0" : : "i" (n))
-
 void test_printk();
 void test_keyboard_polling();
 
