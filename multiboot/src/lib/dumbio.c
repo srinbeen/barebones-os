@@ -1,5 +1,6 @@
 #include <dumbio.h>
 #include <vga.h>
+#include <serial.h>
 #include <stdarg.h>
 
 static void print_char(char);
@@ -151,9 +152,16 @@ int printk(const char *fmt, ...) {
 
 static void print_char(char ch) {
     VGA_display_char(ch);
+    SER_write(ch);
 }
 static void print_str(const char * str) {
-    VGA_display_str(str);
+    uint32_t idx = 0;
+    char ch = str[idx];
+    while (ch != '\0') {
+        print_char(ch);
+        idx++;
+        ch = str[idx];
+    }
 }
 static void print_num(unsigned long long num, uint8_t flags) {
     char buf[MAX_LEN_ULONGLONG_STR+1];
@@ -168,14 +176,14 @@ static void print_num(unsigned long long num, uint8_t flags) {
     int i;
 
     if (isPtr) {
-        VGA_display_str("0x");
+        print_str("0x");
     }
     if (num == 0) {
-        VGA_display_char('0');
+        print_char('0');
         return;
     }
     else if (!isHex && isSigned && (long long)num < 0) {
-        VGA_display_char('-');
+        print_char('-');
         num = (long long)num * -1;
     }
     for (i = sizeof(buf)-2; i > -1; i--) {
@@ -187,5 +195,5 @@ static void print_num(unsigned long long num, uint8_t flags) {
             break;
         }
     }
-    VGA_display_str(buf + i);
+    print_str(buf + i);
 }

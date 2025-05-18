@@ -20,7 +20,7 @@ void irq_handler(int n, int e) {
         HLT();
     }
     
-    irq_table[n].handler(irq_table[n].args);
+    irq_table[n].handler(n, e, irq_table[n].args);
 }
 
 void setup_idt() {
@@ -67,9 +67,9 @@ void IRQ_setup() {
     CLI();
     TSS_setup();
     PIC_remap(M_PIC_OFFSET, S_PIC_OFFSET);
-    PS2_setup();
-    SER_init();
     setup_idt();
+    SER_init();
+    PS2_setup();
     STI();
 }
 

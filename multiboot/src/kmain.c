@@ -8,15 +8,25 @@
 #include <interrupts.h>
 #include <pic.h>
 
+#include <multiboot.h>
+#include <serial.h>
+
 void test_printk();
 void test_keyboard_polling();
 
-void kmain() {
+void kmain(void* mb_header, uint32_t magic) {
   VGA_clear();
-  
-  IRQ_setup();
-  VGA_clear();
-  
+
+  CLI();
+    TSS_setup();
+    PIC_remap(M_PIC_OFFSET, S_PIC_OFFSET);
+    setup_idt();
+    SER_init();
+    // PS2_setup();
+  STI();
+
+  multiboot_parse_tags((multiboot_fixed_header_t*)mb_header);
+
   while(1);
 }
 

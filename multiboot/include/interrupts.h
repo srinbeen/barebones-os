@@ -74,7 +74,7 @@ typedef struct {
 } __attribute__((packed)) tss_t;
 
 // irq num, err code, args
-typedef void (*irq_handler_t)(void*);
+typedef void (*irq_handler_t)(int, int, void*);
 typedef struct {
     void *args;
     irq_handler_t handler;

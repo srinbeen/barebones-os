@@ -201,7 +201,7 @@ void PS2_setup() {
     state.justReleased = false;
 
     register_irq(IRQ_KEYBOARD, (void*)&state, PS2_process_keyboard);
-    
+
     PIC_enable_line(PIC_KEYBOARD_IRQ_NUM);
 }
 
@@ -210,7 +210,7 @@ bool PS2_isShift_scancode(uint8_t scancode) {
 }
 
 
-void PS2_process_keyboard(void* args) {
+void PS2_process_keyboard(int n, int e, void* args) {
     keyboard_state_t* state = (keyboard_state_t*)args;
 
     uint8_t scancode = PS2_read_data();

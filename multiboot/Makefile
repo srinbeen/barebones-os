@@ -38,11 +38,11 @@ OSFILES:=/mnt/osfiles
 
 all: $(IMG_FILE)
 	@echo done.. booting qemu
-	qemu-system-x86_64 -drive format=raw,file=$<
+	qemu-system-x86_64 -drive format=raw,file=$< -serial stdio
 
 debug: $(IMG_FILE)
 	@echo done.. booting qemu
-	qemu-system-x86_64 -s -S -drive format=raw,file=$<
+	qemu-system-x86_64 -s -S -drive format=raw,file=$< -serial stdio
 
 kernel: $(KERNEL)
 
@@ -97,7 +97,7 @@ $(IMG_FILE): $(IMG_DIR) $(LO_SH)
 	sudo grub-install \
 	--root-directory=$(OSFILES) \
 	--no-floppy --target=i386-pc \
-	--modules="normal part_msdos ext2 multiboot" \
+	--modules="normal part_msdos ext2 multiboot2" \
 	/dev/loop$(DEV_LOOP)
 
 # Copy disk structure (kernel, grub.cfg) to OSFILES

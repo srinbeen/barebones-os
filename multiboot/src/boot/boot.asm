@@ -18,6 +18,10 @@ start:
     ; stack pointer init
     mov esp, stack_top
 
+    ; multiboot2 header
+    push eax
+    push ebx
+
     ; error checking
     call check_multiboot
     call check_cpuid
@@ -28,9 +32,9 @@ start:
     call enable_paging
 
 
+
     ; load the 64-bit GDT
     lgdt [gdt64.eogdt64]
-
 
     jmp gdt64_code_offset:long_mode_start
 
