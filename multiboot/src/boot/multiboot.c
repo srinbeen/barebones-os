@@ -1,6 +1,8 @@
 #include <multiboot.h>
 #include <dumbio.h>
 
+static char* string_table_addr = (char*)0;
+
 void multiboot_parse_tags(multiboot_fixed_header_t* mb_header) {
 
     printk("header_ptr: %p\n",mb_header);
@@ -58,17 +60,11 @@ void mulitboot_parse_basic_mem_tag(multiboot_basic_mem_tag_t* tag_header) {
 }
 
 void mulitboot_parse_mmap_tag(multiboot_mmap_tag_t* tag_header) {
-    int num_entries = (tag_header->header.size - sizeof(multiboot_mmap_tag_t)) / tag_header->entry_size;
-
-    printk("mmap_tag:\n\tmem info entry size: %d\n\tnum_entries: %d\n", tag_header->entry_size, num_entries);
-    multiboot_mem_info_entry_t* entry = (multiboot_mem_info_entry_t*)((intptr_t)tag_header + sizeof(multiboot_mmap_tag_t));
-
+    int num_entries = ((intptr_t)tag_header + tag_header->header.size - (intptr_t)(tag_header->entries)) / tag_header->entry_size;
+    multiboot_mem_info_entry_t* entry = tag_header->entries;
     for (int i = 0; i < num_entries; i++) {
-        if (entry->type == 1) {
-            printk("ENTRY USABLE:\n\tstarting: 0x%lx\n\tlength: %ld\n", entry->start, entry->length);
-        }
-        else {
-            printk("ENTRY NOT USABLE\n");
+        if (entry->type == MB_MMAP_RAM) {
+            printk("mmap entry:\n\tstarting: 0x%lx\n\tlength: %ld\n", entry->start, entry->length);
         }
 
         entry++;
@@ -76,5 +72,19 @@ void mulitboot_parse_mmap_tag(multiboot_mmap_tag_t* tag_header) {
 }
 
 void mulitboot_parse_elf_sym_tag(multiboot_elf_symbols_tag_t* tag_header) {
-    printk("ELF!!\n");
+    multiboot_section_header_t* section_header = tag_header->section_headers;
+    string_table_addr = (char*)(tag_header->section_headers[tag_header->string_table_index].section_address);
+
+    for (int i = 0; i < tag_header->num_sections; i++) {
+        printk("%s:\n\ttype: 0x%x\n\tflag: 0x%lx\n\taddr: 0x%lx\n\tsize: %ld\n\tdisk_offset: %ld\n", 
+            string_table_addr + section_header->string_table_index, 
+            section_header->type,
+            section_header->flags,
+            section_header->section_address,
+            section_header->section_size,
+            section_header->section_disk_offset
+        );
+
+        section_header++;
+    }
 }
