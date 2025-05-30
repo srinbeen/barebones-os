@@ -32,6 +32,7 @@
 #define STI()           __asm__ volatile ("sti")
 #define CLI()           __asm__ volatile ("cli")
 #define HLT()           __asm__ volatile ("hlt")
+#define FLAGS(x)        __asm__ volatile("pushfq\n\tpop %0" : "=g"(x))
 
 typedef struct {
     uint16_t offset0;

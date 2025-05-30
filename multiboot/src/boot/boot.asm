@@ -11,6 +11,8 @@ global critical_stacks
 global start
 
 %define STACK_SIZE  4096
+%define TSS_SIZE    0x68
+%define PAGE_SIZE   4096
 
 section .text
 bits 32
@@ -18,8 +20,7 @@ start:
     ; stack pointer init
     mov esp, stack_top
 
-    ; multiboot2 header
-    push eax
+    push 0
     push ebx
 
     ; error checking
@@ -28,7 +29,7 @@ start:
     call check_long_mode
 
     ; set up paging
-    call set_up_page_tables
+    call set_up_paging
     call enable_paging
 
 
@@ -120,27 +121,25 @@ error:
 
 
 
-set_up_page_tables:
-    ; map first P4 entry to P3 table
+set_up_paging:
     mov eax, p3_table
     or eax, 0b11        ; present + writable
     mov [p4_table], eax
-
-    ; map first P3 entry to P2 table
+    
     mov eax, p2_table
     or eax, 0b11        ; present + writable
     mov [p3_table], eax
 
     mov ecx, 0          ; counter variable
 .map_p2_table:
-    mov eax, 0x200000   ; 2MiB
-    mul ecx             ; eax *= ecx --> starting page address
-    or eax, 0b10000011  ; present + writable + huge
+    mov eax, 0x200000               ; 2 MiB
+    mul ecx                         ; eax *= ecx --> starting page address
+    or eax, 0b10000011              ; present + writable + huge
     mov [p2_table + ecx * 8], eax   ; each 8-byte page entry has eax starting address
 
-    inc ecx             ; increase counter
-    cmp ecx, 512        ; all entries filled
-    jne .map_p2_table   ; else map the next entry
+    inc ecx                         ; increase counter
+    cmp ecx, 512                    ; all entries filled
+    jne .map_p2_table               ; else map the next entry
 
     ret
 
@@ -170,20 +169,16 @@ enable_paging:
 
 section .bss
 
-; initial pages of size 2MiB
-; needs P4, P3, and P2
-
 ; align to page size
-align 4096
+align PAGE_SIZE
 
-; 512 entries with 8-bit entry = 2^9 entries * 2^3 bytes per entry = 2^12 = 4096 bytes
+; 512 entries with 9-bit entry = 2^9 entries * 2^3 bytes per entry = 2^12 = 4096 bytes
 p4_table:
-    resb 4096
+    resb PAGE_SIZE
 p3_table:
-    resb 4096
+    resb PAGE_SIZE
 p2_table:
-    resb 4096
-
+    resb PAGE_SIZE
 
 ; STACKS
 stack_bottom:
@@ -204,7 +199,7 @@ gp_stack_bottom:
 gp_stack_top:
 
 tss:
-    resb 0x68
+    resb TSS_SIZE
 
 
 section .data

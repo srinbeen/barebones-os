@@ -17,17 +17,18 @@
 #define MB_NULL_TAG_SIZE    8
 
 #define SHT_STRTAB          0x3
-
-
-typedef struct {
-    uint32_t size;
-    uint32_t res;
-} __attribute__((packed)) multiboot_fixed_header_t;
+#define SHF_ALLOC           0x2
 
 typedef struct {
     uint32_t type;
     uint32_t size;
 } __attribute__((packed)) multiboot_tag_header_t;
+
+typedef struct {
+    uint32_t size;
+    uint32_t res;
+    multiboot_tag_header_t tags[];
+} __attribute__((packed)) multiboot_fixed_header_t;
 
 typedef struct {
     multiboot_tag_header_t header;
@@ -86,6 +87,13 @@ typedef struct {
     uint32_t string_table_index;
     multiboot_section_header_t section_headers[];
 } __attribute__((packed)) multiboot_elf_symbols_tag_t;
+
+typedef struct {
+    uint64_t start;
+    uint64_t length;
+} __attribute__((packed)) address_range_t;
+
+// extern char* string_table_addr;
 
 void multiboot_parse_tags(multiboot_fixed_header_t* mb_header);
 void mulitboot_parse_basic_mem_tag(multiboot_basic_mem_tag_t* tag_header);

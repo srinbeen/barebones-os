@@ -51,6 +51,9 @@ void SER_handler(int n, int e, void* args) {
 }
 
 void SER_write(char c) {
+    unsigned long flags;
+    FLAGS(flags);
+
     CLI();
     if (BUF_NEXT(state.tail) == state.head) {
         // full buffer, cannot write
@@ -63,7 +66,10 @@ void SER_write(char c) {
     if (LSR_THRE(inb(COM1_LSR))) {
         SER_consume(&state);
     }
-    STI();
+
+    if ((flags & (1 << 9)) != 0) {
+        STI();
+    }
 }
 
 static void SER_consume(serial_state_t* state) {

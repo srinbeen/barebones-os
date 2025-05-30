@@ -7,18 +7,7 @@ section .text
 bits 64
 long_mode_start:
     ; multiboot2 header
-    ; push eax
-    ; push ebx
-
     pop rdi
-    mov rsi, rdi
-    
-    shl rdi, 32
-    shr rdi, 32
-    
-    shr rsi, 32
-
-
 
     ; resetting segment registers for the future
     mov ax, 0
