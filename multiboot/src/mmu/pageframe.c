@@ -14,12 +14,16 @@ node_t* free_list;
 
 static int mmap_num_entries;
 
-void pf_alloc_init(multiboot_fixed_header_t* mb_header) {
-    uint64_t start_offset = (uintptr_t)mb_header % PAGE_SIZE;
-    uint64_t end_offset = ((uintptr_t)mb_header + mb_header->size) % PAGE_SIZE;
+inline uintptr_t page_align_up(uintptr_t addr) {
+    return (addr + (PAGE_SIZE - 1)) & ~((uintptr_t)PAGE_SIZE - 1);
+}
+inline uintptr_t page_align_down(uintptr_t addr) {
+    return addr & ~((uintptr_t)PAGE_SIZE - 1);
+}
 
-    mb_tags.start = (uintptr_t)mb_header - start_offset;
-    mb_tags.end = (uintptr_t)mb_header + mb_header->size + (end_offset == 0 ? 0 : (PAGE_SIZE - end_offset));
+void pf_alloc_init(multiboot_fixed_header_t* mb_header) {
+    mb_tags.start = page_align_down((uintptr_t)mb_header);
+    mb_tags.end = page_align_up((uintptr_t)mb_header + mb_header->size);
 
     multiboot_tag_header_t* var_tag_header = mb_header->tags;
     for (int i = 0; var_tag_header->type != MB_NULL_TAG && var_tag_header->size != MB_NULL_TAG_SIZE; i++) {
@@ -36,12 +40,9 @@ void pf_alloc_init(multiboot_fixed_header_t* mb_header) {
                 break;
         }
 
-        intptr_t new_tag_addr = (intptr_t)var_tag_header + var_tag_header->size;
-        int offset = new_tag_addr % MB_TAG_ALIGN;
-        if (offset != 0) {
-            new_tag_addr += (MB_TAG_ALIGN-offset);
-        }
-        var_tag_header = (multiboot_tag_header_t*)new_tag_addr;
+        var_tag_header = (multiboot_tag_header_t*)(
+            ((uintptr_t)var_tag_header + var_tag_header->size + (MB_TAG_ALIGN-1)) & ~((uintptr_t)MB_TAG_ALIGN-1)
+        );
     }
 
     free_list = NULL_PAGE;
@@ -57,8 +58,7 @@ void pf_alloc_init(multiboot_fixed_header_t* mb_header) {
         new_pf.entry++;
     }
 
-    int offset = new_pf.entry->start % PAGE_SIZE;
-    new_pf.addr = new_pf.entry->start + (offset == 0 ? 0 : PAGE_SIZE - offset);
+    new_pf.addr = page_align_up(new_pf.entry->start);
 }
 
 void* pf_alloc() {
@@ -94,12 +94,9 @@ void* pf_alloc() {
 
         if (section_header->flags & SHF_ALLOC) {
             range_t section_pf;
-            uint64_t start_offset = section_header->section_address % PAGE_SIZE;
-            uint64_t end_offset = (section_header->section_address + section_header->section_size) % PAGE_SIZE;
 
-            section_pf.start = section_header->section_address - start_offset;
-            section_pf.end = (section_header->section_address + section_header->section_size + 
-                (end_offset == 0 ? 0 : (PAGE_SIZE - end_offset)));
+            section_pf.start = page_align_down(section_header->section_address);
+            section_pf.end = page_align_up(section_header->section_address + section_header->section_size);
             
             if ((section_pf.start >= new_pf.addr && section_pf.start < new_pf.addr + PAGE_SIZE) || 
                 (section_pf.start <= new_pf.addr && section_pf.end > new_pf.addr)) {
@@ -146,8 +143,7 @@ int update_running_pf() {
             new_pf.entry++;
         } while (new_pf.entry->type != MB_MMAP_RAM);
 
-        int offset = new_pf.entry->start % PAGE_SIZE;
-        new_pf.addr = new_pf.entry->start + (offset == 0 ? 0 : PAGE_SIZE - offset);
+        new_pf.addr = page_align_up(new_pf.entry->start);
     }
 
     return 0;
@@ -183,12 +179,8 @@ int is_pf_valid(void* addr) {
                 continue;
             }
 
-            uint64_t start_offset = section_header->section_address % PAGE_SIZE;
-            uint64_t end_offset = (section_header->section_address + section_header->section_size) % PAGE_SIZE;
-
-            uintptr_t section_pf_start = section_header->section_address - start_offset;
-            uintptr_t section_pf_end = (section_header->section_address + section_header->section_size + 
-                (end_offset == 0 ? 0 : (PAGE_SIZE - end_offset)));
+            uintptr_t section_pf_start = page_align_down(section_header->section_address);
+            uintptr_t section_pf_end = page_align_up(section_header->section_address + section_header->section_size);
             
             if ((section_pf_start >= addr_num && section_pf_start < addr_num + PAGE_SIZE) || 
                 (section_pf_start <= addr_num && section_pf_end > addr_num)) {

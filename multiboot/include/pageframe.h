@@ -21,6 +21,9 @@ typedef struct s_node_t {
     struct s_node_t* prev;
 } node_t;
 
+uintptr_t page_align_up(uintptr_t addr);
+uintptr_t page_align_down(uintptr_t addr);
+
 void  pf_alloc_init(multiboot_fixed_header_t* mb_header);
 void* pf_alloc();
 void  pf_free(void* pf);
