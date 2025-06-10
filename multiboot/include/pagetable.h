@@ -6,6 +6,7 @@
 
 #define CR3(x)              __asm__ volatile("mov %%cr3, %0" : "=r"(x) : : "memory")
 #define CR2(x)              __asm__ volatile("mov %%cr2, %0" : "=r"(x) : : "memory")
+#define INVLPG(x)           __asm__ volatile ("invlpg (%0)" : : "r" ((void*)x))
 
 
 #define PT_NUM_ENTRIES      512

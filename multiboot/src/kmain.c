@@ -1,5 +1,6 @@
 #include <stdint-gcc.h>
 #include <limits.h>
+#include <dumbstring.h>
 
 #include <vga.h>
 #include <dumbio.h>
@@ -12,17 +13,17 @@
 #include <multiboot.h>
 #include <pageframe.h>
 #include <pagetable.h>
+#include <kmalloc.h>
 
 void test_printk();
 void test_keyboard_polling();
 void pf_alloc_test(multiboot_fixed_header_t* mb_header);
-void vp_alloc_test();
+void vp_alloc_test(multiboot_fixed_header_t* mb_header);
+void kmalloc_test();
 
 void kmain(multiboot_fixed_header_t* mb_header) {
   CLI();
     VGA_clear();
-    pf_alloc_init(mb_header);
-    setup_kernel_page_table();
 
     TSS_setup();
     PIC_remap(M_PIC_OFFSET, S_PIC_OFFSET);
@@ -32,19 +33,53 @@ void kmain(multiboot_fixed_header_t* mb_header) {
   STI();
   
   VGA_clear();
-
-  // uint64_t* vp = MMU_alloc_page();
-  // printk("vaddr: %p\n", vp);
-  // for(int i = 0; i < PAGE_SIZE/sizeof(uint64_t); i++) {
-  //   vp[i] = 0xDEADBEEF;
-  // }
-  // for(int i = 0; i < PAGE_SIZE/sizeof(uint64_t); i++) {
-  //   printk("%d: %lx\n", i, vp[i]);
-  // }
-
-  vp_alloc_test();
+  pf_alloc_init(mb_header);
+  setup_kernel_page_table();
+  kmalloc_test();
 
   while(1);
+}
+
+void kmalloc_test() {
+  kmalloc_init();
+  uint8_t* addr = kmalloc(8);
+  printk("%p\n", addr);
+  const char* bruh = "BRUH.";
+  memcpy(addr, bruh, 6);
+  printk("%s\n", addr);
+  
+  uint8_t* addr1 = kmalloc(8);
+  printk("%p\n", addr1);
+  kfree(addr);
+  uint8_t* addr2 = kmalloc(8);
+  printk("%p\n", addr2);
+
+  for(int i = 0; i < NUM_POOLS + 2; i++) {
+    uint64_t pool_size = (1 << (5+i));
+    uint64_t num_allocs = i < NUM_POOLS ? (PAGE_SIZE / pool_size) * 3 / 2 : 1;
+    char** addresses = kmalloc(sizeof(char*) * num_allocs);
+    const char* bruhbruh = "bruh:)";
+    for (int j = 0; j < num_allocs; j++) {
+      addresses[j] = kmalloc(pool_size - sizeof(kmalloc_chunk_header_t));
+      printk("addresses[%d]: %p\n", j, addresses[j]);
+      memcpy(addresses[j], bruhbruh, 7);
+    }
+    for (int j = 0; j < num_allocs; j++) {
+      if (j % 2 == 0) {
+        printk("%d: %s\n", j, addresses[j]);
+      }
+      else {
+        kfree(addresses[j]);
+      }
+    }
+    for (int j = 0; j < num_allocs; j++) {
+      if (j % 2 == 0) {
+        kfree(addresses[j]);
+      }
+    }
+
+    kfree(addresses);
+  }
 }
 
 void test_keyboard_polling() {
@@ -146,9 +181,20 @@ void pf_alloc_test(multiboot_fixed_header_t* mb_header) {
   printk("TEST PASSED!!!\n");
 }
 
-void vp_alloc_test() {
+void vp_alloc_test(multiboot_fixed_header_t* mb_header) {
+
+  pf_alloc_init(mb_header);
+  setup_kernel_page_table();
 
   void* vp;
+  vp = MMU_alloc_page();
+  *(uintptr_t*)vp = (uintptr_t)vp;
+  MMU_free_page(vp);
+  printk("%lx\n", *(uintptr_t*)vp);
+
+  pf_alloc_init(mb_header);
+  setup_kernel_page_table();
+
   for(int i = 1;;i++) {
     for (int j = 0; j < (1 << i); j++) {
       vp = MMU_alloc_page();
@@ -156,6 +202,17 @@ void vp_alloc_test() {
     }
     MMU_free_page(vp);
   }
+  
+  pf_alloc_init(mb_header);
+  setup_kernel_page_table();
 
-  printk("TEST PASSED!!!\n");
+  for(;;) {
+    vp = MMU_alloc_page();
+    if ((uintptr_t)vp >= KHEAP_START + KHEAP_START) {
+      printk("%p\n", vp);
+    }
+    MMU_free_page(vp);
+
+  }
+
 }

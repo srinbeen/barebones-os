@@ -111,6 +111,8 @@ void vp_free_page(PML4_entry_t* page_table, uintptr_t vaddr) {
         pf_free((void*)((uintptr_t)pt_base[idx].base << PT_OFFSET));
 
         pt_base[idx].p = 0;
+        pt_base[idx].avl = 0;
+        INVLPG(vaddr);
     }
     else if (pt_base[idx].avl == 1) {
         pt_base[idx].avl = 0;
@@ -138,6 +140,7 @@ void vp_alloc_page(PML4_entry_t* page_table, uintptr_t vaddr, bool demand) {
         memset(pf, 0, PAGE_SIZE);
 
         pt_base[idx].p = 1;
+        pt_base[idx].avl = 0;
         pt_base[idx].us = 0;
         pt_base[idx].rw = 1;
         pt_base[idx].base = (uintptr_t)pf >> PT_OFFSET;
@@ -154,7 +157,7 @@ PDP_entry_t* get_PDPT_base(PML4_entry_t* page_table, uintptr_t vaddr, bool creat
             pdpt_base = pf_alloc();
             memset(pdpt_base, 0, PAGE_SIZE);
             if (pdpt_base == NULL_PAGE) {
-                printk("PF_ALLOC FAILED\n");
+                printk("get_PDPT_base: PF_ALLOC FAILED --> %p\n", (void*)vaddr);
                 HLT();
             }
             
@@ -184,7 +187,7 @@ PD_entry_t* get_PDT_base(PDP_entry_t* pdpt_base, uintptr_t vaddr, bool create) {
             pdt_base = pf_alloc();
             memset(pdt_base, 0, PAGE_SIZE);
             if (pdt_base == NULL_PAGE) {
-                printk("PF_ALLOC FAILED\n");
+                printk("get_PDT_base: PF_ALLOC FAILED --> %p\n", (void*)vaddr);
                 HLT();
             }
             
@@ -213,7 +216,7 @@ PT_entry_t* get_PT_base(PD_entry_t* pdt_base, uintptr_t vaddr, bool create) {
             pt_base = pf_alloc();
             memset(pt_base, 0, PAGE_SIZE);
             if (pt_base == NULL_PAGE) {
-                printk("PF_ALLOC FAILED\n");
+                printk("get_PT_base: PF_ALLOC FAILED --> %p\n", (void*)vaddr);
                 HLT();
             }
             
@@ -237,6 +240,7 @@ void pagefault_handler(int n, int e, void* args) {
     valloc_state_t* state = (valloc_state_t*)args;
     uintptr_t vaddr;
     CR2(vaddr);
+    vaddr = page_align_down(vaddr);
 
     PDP_entry_t*    pdpt_base = get_PDPT_base(state->cur_page_table, vaddr, 0);
     if (pdpt_base == NULL_PAGE) {
@@ -266,6 +270,7 @@ void pagefault_handler(int n, int e, void* args) {
         memset(pf, 0, PAGE_SIZE);
 
         pt_base[idx].p = 1;
+        pt_base[idx].avl = 0;
         pt_base[idx].base = (uintptr_t)pf >> PT_OFFSET;
     }
     else {
